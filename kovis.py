@@ -76,11 +76,13 @@ def process_pdf(pdf_file_path, bucket, show_page_lists=False):
     # Add primary folder
     save_dir_name = os.path.join(save_dir_name, '0')
 
+    print(pdf_file_path)
+    return
+
     # make a new directory to save results in
     if not os.path.exists(save_dir_name) and not show_page_lists:
         os.makedirs(save_dir_name)
 
-    return
 
     # open the pdf
     pdfFileObj = open(pdf_file_path, 'rb')
