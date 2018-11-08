@@ -11,15 +11,15 @@ class Globals:
         self.appid = '202'
         self.corr_year = '2018'
         # mailing date
-        self.scan_date = {"1": "11/12/18", "2A": "11/12/18", "3A": "11/14/18",
-                          "3B": "11/12/18", "3C": "11/12/18", "3D": "11/12/18",
-                          "4A": "11/12/18", "4B": "11/12/18", "4C": "11/12/18",
-                          "4D": "11/12/18", "5A": "11/13/18", "5B": "11/12/18",
-                          "5C": "11/12/18", "5D": "11/12/18", "6A": "11/12/18",
-                          "6B": "11/12/18", "6C": "11/12/18", "6D": "11/12/18",
-                          "8": "11/12/18", "9A": "11/12/18", "9B": "11/12/18",
-                          "10A": "11/12/18", "11A": "11/12/18", "11B": "11/12/18",
-                          "12A": "11/12/18", "12B": "11/12/18"}
+        self.scan_date = {"1": "11/12/2018", "2A": "11/12/2018", "3A": "11/14/2018",
+                          "3B": "11/12/2018", "3C": "11/12/2018", "3D": "11/12/2018",
+                          "4A": "11/12/2018", "4B": "11/12/2018", "4C": "11/12/2018",
+                          "4D": "11/12/2018", "5A": "11/13/2018", "5B": "11/12/2018",
+                          "5C": "11/12/2018", "5D": "11/12/2018", "6A": "11/12/2018",
+                          "6B": "11/12/2018", "6C": "11/12/2018", "6D": "11/12/2018",
+                          "8": "11/12/2018", "9A": "11/12/2018", "9B": "11/12/2018",
+                          "10A": "11/12/2018", "11A": "11/12/2018", "11B": "11/12/2018",
+                          "12A": "11/12/2018", "12B": "11/12/2018"}
 
         # bucket state
         self.state = {"1": "IA", "2A": "IA", "3A": "IA", "3B": "IA",
@@ -52,7 +52,7 @@ def get_wellmark_id(pdf_file_path):
 
             if srch is None:
                 print("Skipping: {0} Record: {1}\n{2}\n\n".format(os.path.basename(pdf_file_path), i, text))
-            if len(srch_cnt) > 1:
+            if len(srch_cnt) > 0:
                 print(("WARNING!!! Mulitple Matches!!!: "
                        "{0} Record: {1}\n{2}\n\n".format(os.path.basename(pdf_file_path), i, text)))
 
@@ -70,8 +70,9 @@ def process_pdf(pdf_file_path, bucket, show_page_lists=False):
     # compile regular expressions for searches
     # state_re = re.compile("[a-z, A-Z][a-z, A-Z](?=_Bucket)")
     # bucket_re = re.compile("(?<=Bucket[\s])[\S\s]|[A-Z](?=_)")
-    # wid_re = re.compile("\d{3}(AD)\d{4}|(W)\d{8}")
-    wid_re = re.compile("(?!111AD1111)(\d{3}(AD)\d{4}|(W)\d{8})")
+
+    # wid_re = re.compile("(?!111AD1111)(\d{3}(AD)\d{4}|(W)\d{8})")
+    wid_re = re.compile("(\d{3}(AD)\d{4}|(W)\d{8})")
     date_string = datetime.datetime.strftime(datetime.datetime.today(), "%m%d%Y%H%M%S")
     # 
     save_dir_name = ('jttocust100001_{state}{bucket}_{timestamp}'.format(bucket=bucket,
@@ -109,7 +110,6 @@ def process_pdf(pdf_file_path, bucket, show_page_lists=False):
 
     # initialize a couple of variables
     batch = PyPDF2.PdfFileWriter()
-    extracted_wid = None
     seq = 0
     for n, i in enumerate(all_pages, 1):
         # where n is the iteratator count, i is the source pdf page number
@@ -135,8 +135,8 @@ def process_pdf(pdf_file_path, bucket, show_page_lists=False):
 
             if srch is not None:
                 extracted_wid = srch[0]
-            else:
-                print("Skipping: {0} Record: {1}\n{2}\n\n".format(os.path.basename(pdf_file_path), i, text))
+            # else:
+            #     print("Skipping: {0} Record: {1}\n{2}\n\n".format(os.path.basename(pdf_file_path), i, text))
 
         if (i in doc_last_pages) and (i != pdf_reader.numPages):
             # write dat file, write out to pdf
@@ -150,7 +150,7 @@ def process_pdf(pdf_file_path, bucket, show_page_lists=False):
             seq += 1
             batch = PyPDF2.PdfFileWriter()
 
-        if seq >= 10: break
+        # if seq >= 10: break
 
     pdf_file_obj.close()
 
@@ -158,6 +158,9 @@ def process_pdf(pdf_file_path, bucket, show_page_lists=False):
 if __name__ == '__main__':
 
     process_folders = [d for d in os.listdir(os.chdir("..")) if os.path.isdir(d) and d != 'kovis']
+    skip = set(['3A'])
+    run_group = set(['3C', '3A', '11A', '3D'])
+
     for n, folder in enumerate(process_folders, 1):
         # where n is the iteration count
         process_path = os.path.join(os.path.abspath("."), folder)
@@ -165,11 +168,14 @@ if __name__ == '__main__':
         print_re = re.compile("(Bucket)")
 
         bucket = os.path.basename(process_path)[7:]
-        pdf_print_files = [f for f in os.listdir(process_path) if print_re.search(f) and f[-3:].upper() == 'PDF']
 
-        pdf_print_files = map(lambda f: os.path.abspath(os.path.join(process_path, f)), pdf_print_files)
-        #
-        for pdf in pdf_print_files:
-            process_pdf(pdf, bucket)
+        # if bucket not in skip:
+        # if True:
+        if bucket in run_group:
+            pdf_print_files = [f for f in os.listdir(process_path) if print_re.search(f) and f[-3:].upper() == 'PDF']
+            pdf_print_files = map(lambda f: os.path.abspath(os.path.join(process_path, f)), pdf_print_files)
+            #
+            for pdf in pdf_print_files:
+                process_pdf(pdf, bucket)
 
-        if n >= 1: break
+        # if n >= 3: break
