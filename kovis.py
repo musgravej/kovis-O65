@@ -133,12 +133,16 @@ def process_pdf(pdf_file_path, bucket, show_page_lists=False):
         batch.addPage(pdf_reader.getPage(i))
 
         # Create secondary folder
+        # secondary folder starts at 00 and increments by 1 for each group of 100,000
         secondary_dir = int(seq / 100000)
         secondary_dir = os.path.join(save_dir_name, str.zfill(str(secondary_dir), 2))
         if not os.path.exists(secondary_dir):
             os.mkdir(secondary_dir)
         #
 
+        # The sequential number starts over for each secondary folder 
+        file_seq = seq - (int(seq / 100000) * 100000)
+        # 
         if i in wid_search_pages:
             # search for text, save to variable
             text = page_obj.extractText()
@@ -156,9 +160,9 @@ def process_pdf(pdf_file_path, bucket, show_page_lists=False):
 
         if (i in doc_last_pages) and (i != pdf_reader.numPages):
             # write dat file, write out to pdf
-            with open(os.path.join(secondary_dir, "{0:0>5}001.pdf".format(seq)), 'wb') as output:
+            with open(os.path.join(secondary_dir, "{0:0>5}001.pdf".format(file_seq)), 'wb') as output:
                 batch.write(output)
-            with open(os.path.join(secondary_dir, "{0:0>5}IDX.dat".format(seq)), 'w') as datfile:
+            with open(os.path.join(secondary_dir, "{0:0>5}IDX.dat".format(file_seq)), 'w') as datfile:
                 datfile.write("{appid};1;;;;;;;;;;;{wid};0001;N;{year};{scan}\n".format(wid=extracted_wid,
                                                                                         appid=g.appid,
                                                                                         scan=g.scan_date[bucket],
@@ -281,13 +285,16 @@ def process_large_pdf(pdf_file_path, bucket, show_page_lists=False):
         # Ok, now we should be connected the the right directory to save this record
 
         # Create secondary folder
+        # secondary folder starts at 00 and increments by 1 for each group of 100,000
         secondary_dir = int(seq / 100000)
         secondary_dir = os.path.join(save_dir_name, str.zfill(str(secondary_dir), 2))
         if not os.path.exists(secondary_dir):
             os.mkdir(secondary_dir)
         #
 
-        # print(secondary_dir)
+        # The sequential number starts over for each secondary folder 
+        file_seq = seq - (int(seq / 100000) * 100000)
+        # 
 
         if i in wid_search_pages:
             # search for text, save to variable
@@ -306,9 +313,9 @@ def process_large_pdf(pdf_file_path, bucket, show_page_lists=False):
 
         if (i in doc_last_pages) and (i != pdf_reader.numPages):
             # write dat file, write out to pdf
-            with open(os.path.join(secondary_dir, "{0:0>5}001.pdf".format(seq)), 'wb') as output:
+            with open(os.path.join(secondary_dir, "{0:0>5}001.pdf".format(file_seq)), 'wb') as output:
                 batch.write(output)
-            with open(os.path.join(secondary_dir, "{0:0>5}IDX.dat".format(seq)), 'w') as datfile:
+            with open(os.path.join(secondary_dir, "{0:0>5}IDX.dat".format(file_seq)), 'w') as datfile:
                 datfile.write("{appid};1;;;;;;;;;;;{wid};0001;N;{year};{scan}\n".format(wid=extracted_wid,
                                                                                         appid=g.appid,
                                                                                         scan=g.scan_date[bucket],
@@ -325,7 +332,7 @@ if __name__ == '__main__':
 
     process_folders = [d for d in os.listdir(os.chdir("..")) if os.path.isdir(d) and d != 'kovis']
     skip = set(['3A', '11A', '3C', '3D', '5A'])
-    run_group = set(['3A'])
+    run_group = set(['5A'])
 
     for n, folder in enumerate(process_folders, 1):
         # where n is the iteration counter
@@ -342,6 +349,7 @@ if __name__ == '__main__':
             pdf_print_files = map(lambda f: os.path.abspath(os.path.join(process_path, f)), pdf_print_files)
             #
             for pdf in pdf_print_files:
+                # process_pdf(pdf, bucket)
                 if bucket in Globals().large_groups:
                     process_large_pdf(pdf, bucket)
                 else:
